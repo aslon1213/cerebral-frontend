@@ -1,26 +1,215 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Linear design system (dark mode), transcribed from the Figma library
+  "Linear Design System (Community)" — file vpR3fQwyftgGYlEcJbH3aM.
+
+  Everything below is a Tailwind v4 `@theme` token, so the raw hexes appear
+  exactly once here and the components refer to them by role. The Figma
+  variable each token comes from is named in the comment beside it.
+*/
+
+@theme {
+  /* Inter is the library's typeface. It is requested as a plain font-family
+     rather than through `next/font/google` so the build never reaches out to
+     the network — the stack falls back to the host UI font when Inter is
+     absent. */
+  --font-sans: "Inter", "Inter var", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* --- Surfaces ------------------------------------------------------- */
+  --color-app: #181921; /* ui/app-background */
+  --color-surface: #1c1d2a; /* grey/1C1D2A — cards and panels */
+  --color-surface-raised: #1d1e2b; /* ui/background-command-bar — popovers */
+  --color-surface-sunken: #151621; /* grey/151621 — input fields */
+  --color-surface-hover: #1f2130; /* grey/1F2130 */
+  --color-sidebar: #191a23; /* grey/191A23 */
+  --color-control: #292a35; /* grey/292A35 — secondary button rest */
+  --color-control-hover: #2c2d42; /* grey/2C2D42 — secondary button hover */
+
+  /* Row and menu-item hover. The library uses a translucent grey so the
+     surface underneath still reads through. */
+  --color-overlay-hover: rgba(133, 134, 152, 0.2); /* ui/button-background @ 20% */
+
+  /* --- Lines ---------------------------------------------------------- */
+  --color-line: #272832; /* grey/272832 — hairline dividers */
+  --color-line-strong: #393a4b; /* grey/393A4B — control borders */
+  --color-line-input: #444556; /* grey/444556 — input borders */
+  --color-line-hover: #3c3d53; /* grey/3C3D53 */
+
+  /* --- Foreground ----------------------------------------------------- */
+  --color-fg: #eeeffc; /* grey/EEEFFC */
+  --color-fg-muted: #d2d3e0; /* grey/D2D3E0 */
+  --color-fg-subtle: #858699; /* grey/858699 */
+  --color-fg-faint: #6b6f76; /* grey/6B6F76 */
+
+  /* --- Brand ---------------------------------------------------------- */
+  --color-brand: #5e6ad2; /* primary/5E6AD2 */
+  --color-brand-solid: #575bc7; /* primary/575BC7 — button rest */
+  --color-brand-hover: #666be2; /* primary/666BE2 — button hover */
+  --color-brand-ring: #6c79ff; /* primary/6C79FF — focus ring */
+  --color-brand-dim: #2a2b51; /* primary/2A2B51 */
+  /* A wash of the brand for "selected but not a call to action" — the state a
+     toggled label chip is in. Translucent so the surface under it still reads. */
+  --color-brand-wash: rgba(94, 106, 210, 0.18);
+
+  /* --- Decoration ----------------------------------------------------- */
+  --color-red: #eb5757; /* decoration/red */
+  --color-red-light: #fa6563; /* decoration/red-light */
+  --color-orange: #f2994a; /* decoration/orange */
+  --color-yellow: #f2c94c; /* decoration/yellow */
+  --color-green: #4cb782; /* decoration/green */
+  --color-blue: #4ea7fc; /* decoration/blue */
+  --color-purple: #bb87fc; /* decoration/purple */
+  --color-teal: #00b2bf; /* decoration/teal */
+  --color-slate: #95a2b3; /* decoration/grey */
+
+  /* --- Type scale ------------------------------------------------------
+     Named after the library's text styles, and the sizes are theirs exactly.
+
+     Leading is the one place this departs from the file. Most of the styles
+     there carry a line height of "100", which Figma resolves against a text
+     box it grows to fit; in CSS the same number is a hard 1.0 line box that
+     crops descenders the moment the text sits in anything that hides overflow
+     — every truncating row and label here. The two styles that name a real
+     leading (normal at 22, large at 28.8) keep it; the rest get the smallest
+     leading that clears Inter's ink. */
+  --text-micro: 11px;
+  --text-micro--line-height: 16px;
+  --text-mini: 12px;
+  --text-mini--line-height: 16px;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-normal: 15px;
+  --text-normal--line-height: 22px;
+  --text-large: 18px;
+  --text-large--line-height: 28.8px;
+  --text-title3: 20px;
+  --text-title3--line-height: 1.2;
+  --text-issue: 22px;
+  --text-issue--line-height: 1.2;
+  --text-title2: 24px;
+  --text-title2--line-height: 1.2;
+  --text-title1: 36px;
+  --text-title1--line-height: 1.2;
+
+  /* --- Radii ---------------------------------------------------------- */
+  --radius-control: 4px; /* buttons, menu items */
+  --radius-input: 6px; /* input fields */
+  --radius-panel: 8px; /* cards */
+
+  /* --- Elevation ------------------------------------------------------ */
+  --shadow-button: 0 1px 1px 0 rgba(0, 0, 0, 0.09); /* effect "Button 2" */
+  --shadow-control: 0 1px 0.5px 0 rgba(0, 0, 0, 0.15);
+  --shadow-panel: 0 1px 2px 0 rgba(0, 0, 0, 0.09); /* effect "Button" */
+  --shadow-popover: 0 4px 24px 0 rgba(0, 0, 0, 0.36);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  /*
+    `color-scheme: dark` is what makes the native date picker, its calendar
+    glyph, and the scrollbars render dark — without it they arrive white and
+    stand out against every surface here.
+  */
+  html {
+    color-scheme: dark;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    margin: 0;
+    background-color: var(--color-app);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-normal);
+    line-height: var(--text-normal--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgba(94, 106, 210, 0.4);
+  }
+
+  /* Thin, low-contrast scrollbars, as in the library's sidebar and lists. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-input) transparent;
+  }
+
+  /*
+    Every interactive element takes the same focus ring — `primary/6C79FF`, the
+    colour the library's "Focus" button states use. `:focus-visible` keeps it
+    off mouse clicks.
+  */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-ring);
+    outline-offset: 1px;
+  }
+
+  /*
+    The row status control paints its own focus ring.
+
+    Its `<select>` is stretched invisibly across the control so the browser's
+    picker and keyboard handling stay native — but an `opacity: 0` element
+    cannot show the outline `:focus-visible` gives it. The ring is drawn on the
+    visible wrapper instead. Written out here rather than assembled from
+    `has-[...]` utilities so the painted style is stated once and cannot be left
+    to whether a width utility also implies `outline-style`.
+  */
+  .status-control:has(select:focus-visible) {
+    outline: 2px solid var(--color-brand-ring);
+    outline-offset: 1px;
+  }
+
+  /*
+    Disclosure triggers are buttons, not the platform's twisty — the chevron
+    beside the label is ours, so the native marker has to go. Safari needs the
+    `::-webkit-details-marker` form.
+  */
+  summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /*
+    `interpolate-size` lets the composer expand from nothing to its intrinsic
+    height, which a plain `height` transition cannot do. Browsers without
+    `::details-content` support simply snap open, which is the old behaviour.
+  */
+  @supports (interpolate-size: allow-keywords) {
+    :root {
+      interpolate-size: allow-keywords;
+    }
+
+    details::details-content {
+      overflow: hidden;
+      block-size: 0;
+      transition:
+        block-size 180ms ease,
+        content-visibility 180ms allow-discrete;
+    }
+
+    details[open]::details-content {
+      block-size: auto;
+    }
+  }
+
+  /*
+    Motion here is only ever a hint about state — a row lighting up, a composer
+    opening. None of it carries meaning, so it can all be dropped for anyone who
+    has asked their system to reduce motion.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

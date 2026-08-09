@@ -72,3 +72,93 @@ export function formatDueDate(value: DateTimeString | null | undefined): string 
     ...(sameYear ? {} : { year: "numeric" }),
   });
 }
+
+/**
+ * How long ago, said the way a person would say it.
+ *
+ * The inbox is sorted by how long an agent has been stuck, so this is the
+ * number the screen is really about — "3 hours" beside a blocked run is the
+ * cost of not having answered it yet.
+ */
+export function formatRelative(value: DateTimeString | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+  const future = seconds < 0;
+  const magnitude = Math.abs(seconds);
+
+  const say = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+
+  let phrase: string;
+  if (magnitude < 45) phrase = "moments";
+  else if (magnitude < 3600) phrase = say(Math.round(magnitude / 60), "minute");
+  else if (magnitude < 86_400) phrase = say(Math.round(magnitude / 3600), "hour");
+  else if (magnitude < 2_592_000) phrase = say(Math.round(magnitude / 86_400), "day");
+  else if (magnitude < 31_536_000) phrase = say(Math.round(magnitude / 2_592_000), "month");
+  else phrase = say(Math.round(magnitude / 31_536_000), "year");
+
+  if (phrase === "moments") return future ? "in moments" : "just now";
+  return future ? `in ${phrase}` : `${phrase} ago`;
+}
+
+/** Bare elapsed time with no "ago" — for a label that already supplies one. */
+export function formatElapsed(value: DateTimeString | null | undefined): string {
+  const relative = formatRelative(value);
+  if (relative === "—") return "—";
+  if (relative === "just now") return "moments";
+  return relative.replace(/^in /, "").replace(/ ago$/, "");
+}
+
+/** How long a run took, from two timestamps. */
+export function formatDuration(
+  from: DateTimeString | null | undefined,
+  to: DateTimeString | null | undefined,
+): string {
+  if (!from || !to) return "—";
+  const start = new Date(from).getTime();
+  const end = new Date(to).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "—";
+
+  const seconds = Math.round((end - start) / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
+}
+
+/** The full timestamp, for a `title` where the relative form is ambiguous. */
+export function formatExact(value: DateTimeString | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+/** Token counts, which run to six figures and are unreadable in full. */
+export function formatCount(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  if (value < 1000) return String(value);
+  if (value < 1_000_000) {
+    const thousands = value / 1000;
+    return `${thousands < 10 ? thousands.toFixed(1) : Math.round(thousands)}k`;
+  }
+  return `${(value / 1_000_000).toFixed(1)}M`;
+}
+
+/**
+ * Cost, which the API sends as a decimal *string* so it is never rounded in
+ * transit. Parsed only to choose how many places to show.
+ */
+export function formatCost(value: string | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return value;
+  if (amount === 0) return "$0.00";
+  return amount < 0.01 ? `$${amount.toFixed(4)}` : `$${amount.toFixed(2)}`;
+}

@@ -23,12 +23,21 @@ export function SubmitButton({
   size = "medium",
   destructive,
   className,
+  name,
+  value,
 }: {
   children: React.ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
   destructive?: boolean;
   className?: string;
+  /**
+   * Submits this key with the form, so several buttons can share one set of
+   * fields and the action can tell which was pressed — how approve and reject
+   * come to write the same note.
+   */
+  name?: string;
+  value?: string;
 }) {
   // `useFormStatus` reads the enclosing form, so the button reflects pending
   // state without the page threading it down.
@@ -37,6 +46,8 @@ export function SubmitButton({
   return (
     <Button
       type="submit"
+      name={name}
+      value={value}
       variant={variant}
       size={size}
       destructive={destructive}

@@ -1,11 +1,32 @@
 # Cerebral API client
 
 Typed client for the FastAPI backend described by `http://localhost:8000/openapi.json`.
-All 25 endpoints are covered: auth, projects, tasks, labels.
 
-The CRUD UI built on top of it lives in `app/(app)/` (projects, tasks, labels),
-with mutations in `app/actions/`. It is built from [Polaris web components](https://shopify.dev/docs/api/app-home/web-components) —
-see `app/_components/README.md` for how those integrate with Server Actions.
+Covers the whole of the **person's** surface: auth, projects, tasks, labels,
+agents, repos, API keys, and the read side of runs — executions, their event
+transcript, their code changes and the interventions they are blocked on.
+
+**Not covered, deliberately.** Every write on the ingest path belongs to the
+observer bot and is API-key-only at the server, so a session token gets `401`
+there by design:
+
+| Endpoint | Whose job |
+| --- | --- |
+| `POST /executions` | The runner opens a run; there is no form for it |
+| `POST /executions/{id}/start\|complete\|fail\|cancel` | The runner drives the state machine |
+| `POST /executions/{id}/usage` | Reported by the runner |
+| `POST /executions/{id}/events` | The bot writes the transcript |
+| `POST /executions/{id}/interventions` | The *agent* asks; the person answers |
+| `POST /executions/{id}/repos`, `.../head`, `.../land` | Git state is recorded by the runner |
+| `GET /api-keys/verify` | A bot checking its own key at startup |
+
+That split is the point: every line of a transcript has to be attributable to a
+credential issued for an agent. If a screen seems to need one of these, the
+scope has been misread.
+
+The UI on top of it lives in `app/(app)/`, with mutations in `app/actions/`. It
+is plain Tailwind against the design tokens in `app/globals.css` — see
+`app/_components/README.md`.
 
 ## Layout
 
@@ -32,6 +53,15 @@ const page = await api.projects.list({ limit: 20, sort_by: "updated_at", order: 
 const task = await api.tasks.create({ project_id: page.items[0].id, name: "Ship it" });
 await api.tasks.attachLabel(task.id, labelId);
 await api.tasks.remove(task.id);                    // 200 with a null payload
+
+// The inbox: pending only, oldest first — the agent blocked longest is losing
+// the most time.
+const waiting = await api.interventions.list({ limit: 50 });
+await api.interventions.approve(waiting.items[0].id, { reasoning: "Run it at 03:00." });
+
+// Runs are read-only here, apart from deletion.
+const run = await api.executions.get(id);           // `repos` inlined; the list omits them
+await api.executions.remove(id, { purge: true });   // 409 history_exists without purge
 ```
 
 Unauthenticated or custom transport (scripts, tests):
@@ -48,6 +78,31 @@ createApiClient({ fetchImpl: myFetchStub });
 
 Import from `@/lib/api` (safe anywhere) rather than `@/lib/api/server` (server-only)
 in code a Client Component might reach.
+
+## Two paginations, and using the wrong one is a real bug
+
+Everything is offset-paginated as `Page<T>` — `{items, total, limit, offset}` —
+**except the event transcript**, which is cursored on `seq`:
+
+```ts
+// Offset: you get a `total`, so page numbers are possible.
+const runs = await api.executions.list({ limit: 50, offset: 50 });
+
+// Cursor: no `total`. Start at 0, then hand back what you were given.
+let after = 0;
+for (;;) {
+  const page = await api.executions.events(id, { after_seq: after, limit: 100 });
+  if (page.items.length === 0) break;              // caught up
+  after = page.next_after_seq ?? after;
+}
+```
+
+The transcript is appended to while it is being read. An offset shifts under
+every event that arrives, so page two would skip or repeat whatever landed in
+between. The same property is what makes tailing a live run work: ask again with
+the cursor already held, and an empty page means there is nothing new.
+
+`GET /executions/{id}/repos` returns a bare list, **not** a `Page`.
 
 ## The response envelope
 
@@ -101,10 +156,29 @@ exposed as `formError`.
 ## Auth
 
 Tokens live in httpOnly cookies (`cerebral_access_token`, `cerebral_refresh_token`),
-never in `localStorage`. That is forced by the backend: it sends no CORS headers
-and rejects `OPTIONS` preflight with 405, so the browser cannot call it directly.
-Every request goes through the Next.js server, which is the only place the token
-needs to be readable — and httpOnly keeps it away from XSS.
+never in `localStorage`. Every request goes through the Next.js server, which is
+the only place the token needs to be readable — and httpOnly keeps it away from
+XSS.
+
+That architecture also sidesteps a live CORS bug. The backend now *does* send
+CORS headers, but `app/main.py` declares
+`allow_methods=["GET", "POST", "PUT", "DELETE"]` — no `PATCH`. Verified against
+the running API:
+
+```
+OPTIONS /api/v1/tasks  Access-Control-Request-Method: POST   -> 200 OK
+OPTIONS /api/v1/tasks  Access-Control-Request-Method: PATCH  -> 400 Disallowed CORS method
+```
+
+Every update endpoint is a `PATCH`, so a browser calling the API directly could
+not update anything. Nothing here does — server-side `fetch` sends no preflight,
+and a server-side `PATCH` reaches the app and fails only on auth — so this UI is
+unaffected. It still wants fixing for any future browser-direct client, and is
+flagged to the API owner rather than worked around.
+
+Also worth raising: `allow_origins=["*"]` with `allow_credentials=True` makes
+Starlette echo whatever `Origin` it is sent, which means any site can make
+credentialed requests. Fine for local development, not for anywhere real.
 
 Refresh happens in two places:
 

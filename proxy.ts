@@ -31,8 +31,13 @@ const LANDING_PATH = "/";
 /** Reachable without a session, and pointless with one. */
 const GUEST_PATHS = ["/login", "/register"];
 
-/** Where a signed-in user is sent when they land somewhere that is not for them. */
-const APP_HOME = "/projects";
+/**
+ * Where a signed-in user is sent when they land somewhere that is not for them.
+ *
+ * The inbox, because it is the only screen that can be urgent: anything on it
+ * is an agent that has stopped and is waiting on this person.
+ */
+const APP_HOME = "/inbox";
 
 function isGuestPath(pathname: string): boolean {
   return GUEST_PATHS.some(

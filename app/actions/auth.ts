@@ -62,9 +62,9 @@ function readCredentials(formData: FormData) {
 function safeRedirectTarget(formData: FormData): string {
   const raw = String(formData.get("redirectTo") ?? "");
   // `/` is the marketing page, so it is not somewhere signing in should land
-  // you — the workspace is.
+  // you — the workspace is, and the inbox is the part of it that can be urgent.
   if (!raw.startsWith("/") || raw.startsWith("//") || raw === "/") {
-    return "/projects";
+    return "/inbox";
   }
   return raw;
 }

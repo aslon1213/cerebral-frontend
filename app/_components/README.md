@@ -1,69 +1,58 @@
-# UI: Polaris web components
+# UI components
 
-The interface is built from Shopify's
-[Polaris web components](https://shopify.dev/docs/api/app-home/web-components) —
-custom elements prefixed `s-`, loaded from Shopify's CDN in `app/layout.tsx`:
+Plain React and Tailwind v4 against the design tokens in `app/globals.css`,
+which transcribe the Linear design system (dark only). There is no component
+library and no CSS beyond those tokens — every colour, size and radius here
+refers to a token by role rather than repeating a hex.
 
-```tsx
-<Script src="https://cdn.shopify.com/shopifycloud/polaris.js" strategy="beforeInteractive" />
-```
+> An earlier version of this app was built from Shopify's Polaris web
+> components, loaded from a CDN. That is gone: the tokens now own the surface,
+> typography and colour scheme, and nothing is fetched at build or run time.
 
-`beforeInteractive` gets the elements defined before hydration so there is no flash
-of un-upgraded markup. Types come from `@shopify/polaris-types`, pulled in globally
-by the triple-slash reference in `polaris-types.d.ts` (rather than
-`compilerOptions.types`, which would stop Next's own ambient types resolving).
+## What is here
 
-## What was verified, not assumed
-
-The docs don't state whether these components need App Bridge or only work inside
-the embedded Shopify admin. Checked directly against a running page:
-
-- **They work standalone.** All elements register and style themselves with no
-  App Bridge and no `shopify-api-key` meta tag.
-- **The inputs are form-associated.** `s-text-field`, `s-text-area`, `s-select`,
-  `s-checkbox` and `s-date-field` all appear in `new FormData(form)`, so the
-  existing Server Actions keep working unchanged.
-- **`s-button type="submit"` submits its enclosing form**, so `useActionState`
-  and `useFormStatus` behave normally.
-
-## Two gotchas worth knowing
-
-**Setting a select's initial value.** Only `selected` on the option works:
-
-```tsx
-<s-select name="priority">
-  <s-option value="high" selected>high</s-option>   {/* ✅ */}
-</s-select>
-
-<s-select name="priority" value="high">…</s-select>  {/* ❌ ignored */}
-<s-select name="p"><option value="high">…</option></s-select>  {/* ❌ native option submits nothing */}
-```
-
-**Custom-element events need `addEventListener`.** React's synthetic `onChange`
-does not bind reliably to non-standard elements, so `AutoSubmitSelect` in
-`ui.tsx` wires the `change` event through a ref.
-
-## Theming
-
-`app/globals.css` no longer sets a `body` background or colour. The scaffold's
-dark-mode values painted a near-black page behind Polaris's light components,
-leaving anything outside a card unreadable. Polaris owns the surface, typography
-and colour scheme; Tailwind's preflight is kept only as a reset and cannot reach
-inside the components' shadow roots.
-
-`next/font/google` was also dropped, since Polaris supplies the typeface — which
-removes a build-time fetch to Google Fonts.
-
-## Component map
-
-| Purpose | Component |
+| File | Role |
 | --- | --- |
-| Page shell and heading | `s-page`, `s-section` |
-| Layout | `s-stack`, `s-grid`, `s-box` |
-| Lists | `s-table` + `s-table-row` / `s-table-cell` |
-| Forms | `s-text-field`, `s-text-area`, `s-select`, `s-date-field`, `s-checkbox`, `s-search-field`, `s-password-field` |
-| Actions | `s-button`, `s-link` |
-| Status | `s-badge` (priority and task status tones), `s-banner` (form errors) |
+| `ui.tsx` | Presentational primitives — buttons, cards, fields, page shell. No hooks, so it stays server-rendered |
+| `form-ui.tsx` | The parts that genuinely need the client: `SubmitButton`, `FilterForm`, `StatusSelect` |
+| `list.tsx` | The issue-list primitives: `List`, `ListRow`, `RowTitle`, `Pagination` |
+| `badges.tsx` | Task vocabulary — priority and status glyphs |
+| `run-badges.tsx` | Run vocabulary — execution status, interventions, change types, commit ids |
+| `icons.tsx` | 16px icons. The first set is exported Figma path data; the second is drawn to the same grid, and says so |
+| `json-view.tsx` | Renders agent-supplied JSON readably without assuming a schema |
+| `transcript.tsx` | The event transcript, including cursor paging and live tailing |
+| `intervention-card.tsx` | One thing an agent is blocked on, answerable in place |
+| `*-form.tsx` | One form per resource, each over a Server Action via `useActionState` |
 
-Field-level errors from the API go straight into each control's `error` prop;
-whole-form errors render as an `s-banner` via `FormError`.
+Display strings for the API's enums live in `lib/vocabulary.ts`, not here, so
+Server Actions can reach them without importing a component module.
+
+## Conventions worth knowing
+
+**Server by default.** Only components that need state, effects or event
+handlers carry `"use client"`. `ui.tsx` deliberately uses no hooks so that
+importing a button never drags a page across the boundary.
+
+**Forms are Server Actions.** Every mutation is a `<form action={...}>` over a
+function in `app/actions/`, with `useActionState` for field errors. Field-level
+errors from the API arrive keyed by field name and drop straight into `Field`;
+whole-form complaints render as a `Banner`.
+
+**A Server Action re-renders its own route.** That is why a card cannot report
+its own success when the action removes it from the list it lives in — resolving
+an intervention is the case that bites. Those actions redirect with enough in
+the URL for the *next* render to say what happened. See
+`lib/intervention-outcome.ts`.
+
+**`<details>` over React state** for disclosures: it works before hydration, it
+is a real disclosure to a screen reader without ARIA, and `open` can be set from
+the server.
+
+**Colour is never the only signal.** Priority, task status, run status and change
+type all differ in shape before they differ in hue — a blocked run is a filled
+disc with pause bars, not merely an orange ring.
+
+**Lists clip their own overflow.** `List` sets `overflow-hidden` for its rounded
+corners, so a popover anchored inside a row is cut off. Anything that needs room
+to explain itself belongs outside the list — see `DeleteAgent`, which lives in
+the agent's edit panel for exactly this reason.

@@ -136,3 +136,103 @@ export function TrashIcon(props: IconProps) {
     </Frame>
   );
 }
+
+/*
+  ---------------------------------------------------------------------------
+  Drawn, not exported.
+
+  The library's icon set has no inbox, run, repo, agent or key, so these are
+  drawn to the same 16px frame and the same 1.5px stroke weight rather than
+  borrowed from elsewhere — a second icon family in the sidebar would be more
+  obvious than a slightly-off glyph. They are strokes where the exported set is
+  fills, which is why they set `stroke` rather than `fill`.
+  ---------------------------------------------------------------------------
+*/
+
+function Stroked({
+  size,
+  className,
+  children,
+}: IconProps & { children: React.ReactNode }) {
+  return (
+    <Frame size={size} className={className} viewBox="0 0 16 16">
+      <g
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {children}
+      </g>
+    </Frame>
+  );
+}
+
+/** `inbox` — what is waiting on you. A tray with a parting in its lip. */
+export function InboxIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <path d="M2 9.5V4.2A2.2 2.2 0 0 1 4.2 2h7.6A2.2 2.2 0 0 1 14 4.2v5.3" />
+      <path d="M2 9.5h3.2l1 2h3.6l1-2H14v2.3a2.2 2.2 0 0 1-2.2 2.2H4.2A2.2 2.2 0 0 1 2 11.8z" />
+    </Stroked>
+  );
+}
+
+/** `runs` — a play mark inside a ring, for a thing that executes. */
+export function RunsIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M6.6 5.6 10.4 8l-3.8 2.4z" />
+    </Stroked>
+  );
+}
+
+/** `repo` — a book standing on a shelf, git's own metaphor for a repository. */
+export function RepoIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <path d="M3 3.6A1.6 1.6 0 0 1 4.6 2H13v9.2H4.6A1.6 1.6 0 0 0 3 12.8z" />
+      <path d="M3 12.8A1.6 1.6 0 0 0 4.6 14H13v-2.8" />
+    </Stroked>
+  );
+}
+
+/** `agent` — a processor: a core with legs, for the thing doing the work. */
+export function AgentIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <rect x="4.25" y="4.25" width="7.5" height="7.5" rx="1.6" />
+      <path d="M6.75 1.75v2.5M9.25 1.75v2.5M6.75 11.75v2.5M9.25 11.75v2.5M1.75 6.75h2.5M1.75 9.25h2.5M11.75 6.75h2.5M11.75 9.25h2.5" />
+    </Stroked>
+  );
+}
+
+/** `key` — a credential. Bit-and-bow, so it is not mistaken for a padlock. */
+export function KeyIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <circle cx="5.4" cy="10.6" r="3.15" />
+      <path d="m7.7 8.4 5.55-5.55M11 5.1l1.7 1.7M9.4 6.7l1.7 1.7" />
+    </Stroked>
+  );
+}
+
+/** `code` — angle brackets, for a change to a file. */
+export function CodeIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <path d="m5.6 5.4-3 2.6 3 2.6M10.4 5.4l3 2.6-3 2.6M9.2 3.2 6.8 12.8" />
+    </Stroked>
+  );
+}
+
+/** `clock` — elapsed time, for how long something has been waiting. */
+export function ClockIcon(props: IconProps) {
+  return (
+    <Stroked {...props}>
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M8 4.4V8l2.4 1.6" />
+    </Stroked>
+  );
+}

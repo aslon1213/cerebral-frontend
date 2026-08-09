@@ -176,3 +176,80 @@ export function Toolbar({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+/**
+ * Offset pagination for the lists that use it — which is every list except the
+ * event transcript, and that one is cursored on `seq` for reasons that do not
+ * apply here.
+ *
+ * Rendered as links rather than buttons so a page is a real URL: it survives a
+ * reload, it can be sent to someone, and it needs no JavaScript.
+ */
+export function Pagination({
+  total,
+  limit,
+  offset,
+  /** The current query, minus `offset` — every filter has to survive paging. */
+  params,
+  basePath,
+}: {
+  total: number;
+  limit: number;
+  offset: number;
+  params: Record<string, string | undefined>;
+  basePath: string;
+}) {
+  if (total <= limit) return null;
+
+  const href = (nextOffset: number) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value) query.set(key, value);
+    }
+    if (nextOffset > 0) query.set("offset", String(nextOffset));
+    const qs = query.toString();
+    return qs === "" ? basePath : `${basePath}?${qs}`;
+  };
+
+  const first = offset + 1;
+  const last = Math.min(offset + limit, total);
+  const hasPrevious = offset > 0;
+  const hasNext = last < total;
+
+  return (
+    <div className="flex items-center justify-between gap-[12px] px-[2px]">
+      <span className="text-mini leading-[16px] text-fg-subtle tabular-nums">
+        {first}–{last} of {total}
+      </span>
+      <div className="flex items-center gap-[6px]">
+        {hasPrevious ? (
+          <Link
+            href={href(Math.max(0, offset - limit))}
+            className={paginationLink}
+            rel="prev"
+          >
+            Previous
+          </Link>
+        ) : (
+          <span className={paginationDisabled}>Previous</span>
+        )}
+        {hasNext ? (
+          <Link href={href(offset + limit)} className={paginationLink} rel="next">
+            Next
+          </Link>
+        ) : (
+          <span className={paginationDisabled}>Next</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const paginationLink =
+  "inline-flex items-center rounded-control border border-line-strong bg-control px-[10px] py-[4px] " +
+  "text-mini leading-[16px] text-fg-muted no-underline shadow-control transition-colors duration-100 " +
+  "hover:bg-control-hover hover:text-fg";
+
+const paginationDisabled =
+  "inline-flex cursor-not-allowed items-center rounded-control border border-line px-[10px] py-[4px] " +
+  "text-mini leading-[16px] text-fg-faint";

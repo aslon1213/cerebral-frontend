@@ -1,13 +1,18 @@
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
-import { getCurrentUser } from "@/lib/api/server";
+import { api, getCurrentUser } from "@/lib/api/server";
 
 import {
+  AgentIcon,
+  InboxIcon,
   IssuesIcon,
+  KeyIcon,
   LabelIcon,
   LayersIcon,
   PlusIcon,
+  RepoIcon,
+  RunsIcon,
   SearchIcon,
   SignOutIcon,
 } from "./icons";
@@ -16,11 +21,55 @@ import { NavLink } from "./nav-link";
 import { SubmitButton } from "./form-ui";
 import { buttonClasses } from "./ui";
 
-const LINKS = [
-  { href: "/projects", label: "Projects", icon: <LayersIcon /> },
-  { href: "/tasks", label: "Tasks", icon: <IssuesIcon /> },
-  { href: "/labels", label: "Labels", icon: <LabelIcon /> },
-];
+/**
+ * Three groups, in the order the work happens: what is waiting on you, what the
+ * agents did, and the things their runs are made of.
+ *
+ * Seven flat entries would have made the inbox — the only one with any urgency
+ * — just another row in a list.
+ */
+const GROUPS: { heading?: string; links: { href: string; label: string; icon: React.ReactNode }[] }[] =
+  [
+    {
+      links: [
+        { href: "/inbox", label: "Inbox", icon: <InboxIcon /> },
+        { href: "/runs", label: "Runs", icon: <RunsIcon /> },
+      ],
+    },
+    {
+      heading: "Plan",
+      links: [
+        { href: "/projects", label: "Projects", icon: <LayersIcon /> },
+        { href: "/tasks", label: "Tasks", icon: <IssuesIcon /> },
+        { href: "/labels", label: "Labels", icon: <LabelIcon /> },
+      ],
+    },
+    {
+      heading: "Setup",
+      links: [
+        { href: "/repos", label: "Repos", icon: <RepoIcon /> },
+        { href: "/agents", label: "Agents", icon: <AgentIcon /> },
+        { href: "/api-keys", label: "API keys", icon: <KeyIcon /> },
+      ],
+    },
+  ];
+
+/**
+ * How many agents are stuck.
+ *
+ * `GET /interventions` returns only what is pending, so its `total` is the
+ * count. Asked for with `limit: 1` because the items are not wanted here — just
+ * the number. A signed-out or failed read shows no badge rather than a zero,
+ * since "nothing is waiting" and "we could not ask" are different claims.
+ */
+async function pendingCount(): Promise<number> {
+  try {
+    const page = await api.interventions.list({ limit: 1 });
+    return page.total;
+  } catch {
+    return 0;
+  }
+}
 
 /**
  * The workspace sidebar, following the library's "Navigation Sidebar" section:
@@ -29,7 +78,7 @@ const LINKS = [
  * bottom.
  */
 export async function Nav() {
-  const user = await getCurrentUser();
+  const [user, waiting] = await Promise.all([getCurrentUser(), pendingCount()]);
   const initial = user?.name?.trim().charAt(0).toUpperCase() || "?";
 
   return (
@@ -46,7 +95,7 @@ export async function Nav() {
         being squeezed — the same swap the rail makes with every other label.
       */}
       <Link
-        href="/projects"
+        href="/inbox"
         aria-label="Cerebral"
         className="flex min-w-0 items-center justify-center rounded-control px-[4px] py-[3px] text-fg no-underline transition-colors duration-100 hover:bg-overlay-hover md:justify-start"
       >
@@ -81,11 +130,27 @@ export async function Nav() {
         </Link>
       </div>
 
-      <nav className="flex flex-col gap-[1px]">
-        {LINKS.map((link) => (
-          <NavLink key={link.href} href={link.href} icon={link.icon}>
-            {link.label}
-          </NavLink>
+      <nav className="flex flex-col gap-[10px]">
+        {GROUPS.map((group, index) => (
+          <div key={group.heading ?? index} className="flex flex-col gap-[1px]">
+            {/* The heading is a wide-screen affordance; on the rail the icons
+                group themselves by the gap between them. */}
+            {group.heading ? (
+              <h2 className="hidden px-[7px] pt-[4px] pb-[2px] text-micro leading-[16px] font-medium tracking-[0.02em] text-fg-faint uppercase md:block">
+                {group.heading}
+              </h2>
+            ) : null}
+            {group.links.map((link) => (
+              <NavLink
+                key={link.href}
+                href={link.href}
+                icon={link.icon}
+                badge={link.href === "/inbox" ? waiting : undefined}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 

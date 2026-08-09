@@ -407,11 +407,16 @@ const TYPES: Record<Language, string[]> = {
 };
 
 /**
- * Identifiers, strings, and everything in between. The alternation order
- * matters: strings are matched before identifiers so a keyword inside quotes
- * stays a string.
+ * Identifiers, strings, and everything in between.
+ *
+ * Two things this has to get right. The alternation order: strings come before
+ * identifiers so a keyword inside quotes stays a string. And exhaustiveness:
+ * a character no branch matches is not flagged, it is silently dropped from
+ * the rendered line, so the last branch deliberately takes everything the
+ * others do not — digits, punctuation, and an unpaired quote alike.
  */
-const TOKEN_RE = /("[^"]*"|'[^']*')|([A-Za-z_][A-Za-z0-9_]*)|(\s+)|([^\sA-Za-z0-9_"']+)/g;
+const TOKEN_RE =
+  /("[^"]*"|'[^']*')|([A-Za-z_][A-Za-z0-9_]*)|(\d+)|(\s+)|([^\sA-Za-z_\d]+)/g;
 
 /** Screaming case is a constant, and reads better left alone than dressed as a type. */
 const SCREAMING = /^[A-Z][A-Z0-9_]*$/;
@@ -430,12 +435,13 @@ export function tokenize(text: string, lang: Language): Token[] {
   TOKEN_RE.lastIndex = 0;
 
   for (let m = TOKEN_RE.exec(text); m !== null; m = TOKEN_RE.exec(text)) {
-    const [raw, quoted, word, , punctuation] = m;
+    const [raw, quoted, word, , , punctuation] = m;
 
     if (quoted) tokens.push({ t: raw, k: "str" });
     else if (word) {
       tokens.push({ t: raw, k: classify(word, lang, text[m.index + raw.length] === "(") });
     } else if (punctuation) tokens.push({ t: raw, k: "pun" });
+    // Numbers and whitespace, which take the colour of the code around them.
     else tokens.push({ t: raw });
   }
 

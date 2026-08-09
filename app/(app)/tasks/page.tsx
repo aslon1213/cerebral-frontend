@@ -27,9 +27,17 @@ import {
   Select,
   TextLink,
 } from "@/app/_components/ui";
+import { RunSummary } from "@/app/_components/run-badges";
 import { createTaskAction, deleteTaskAction, setTaskStatusAction } from "@/app/actions/tasks";
 import { api } from "@/lib/api/server";
+import {
+  describeRunStats,
+  loadExecutionStats,
+  MAX_RUNS_SCANNED,
+  type TaskRunStats,
+} from "@/lib/execution-stats";
 import { formatDueDate, isOverdue } from "@/lib/format";
+import { EXECUTION_STATUS_LABEL } from "@/lib/vocabulary";
 import {
   PRIORITIES,
   TASK_STATUSES,
@@ -69,7 +77,7 @@ export default async function TasksPage({
     ? (filters.priority as Priority)
     : undefined;
 
-  const [page, projects, labels] = await Promise.all([
+  const [page, projects, labels, runs] = await Promise.all([
     api.tasks.list({
       q: filters.q || undefined,
       status,
@@ -81,6 +89,10 @@ export default async function TasksPage({
     }),
     api.projects.list({ limit: 200, sort_by: "name", order: "asc" }),
     api.labels.list({ limit: 200 }),
+    // Grouped from one read rather than a lookup per row — see the note in
+    // `lib/execution-stats`. Scoped to the same project as the task filter so
+    // the two reads agree.
+    loadExecutionStats({ projectId: filters.project_id }),
   ]);
 
   const projectNames = new Map(projects.items.map((project) => [project.id, project.name]));
@@ -237,6 +249,18 @@ export default async function TasksPage({
           )
         ) : null}
 
+        {/*
+          Run counts are grouped from a bounded read, so past that bound they
+          are floors rather than totals. Saying so beats quietly showing a
+          number that is wrong.
+        */}
+        {runs.truncated ? (
+          <p className="text-mini leading-[16px] text-fg-faint">
+            Run counts cover the {MAX_RUNS_SCANNED.toLocaleString()} most recent runs;
+            tasks last run before that may show fewer than they have.
+          </p>
+        ) : null}
+
         {grouped.map((group) => (
           <List key={group.status}>
             <ListGroupHeader
@@ -249,6 +273,7 @@ export default async function TasksPage({
                 key={task.id}
                 task={task}
                 projectName={projectNames.get(task.project_id)}
+                runs={runs.byTask.get(task.id)}
               />
             ))}
           </List>
@@ -258,7 +283,16 @@ export default async function TasksPage({
   );
 }
 
-function TaskRow({ task, projectName }: { task: TaskResponse; projectName?: string }) {
+function TaskRow({
+  task,
+  projectName,
+  runs,
+}: {
+  task: TaskResponse;
+  projectName?: string;
+  /** Absent when no agent has run this task. */
+  runs?: TaskRunStats;
+}) {
   const overdue =
     Boolean(task.due_date) && isOverdue(task.due_date) && task.status !== "done";
 
@@ -297,6 +331,21 @@ function TaskRow({ task, projectName }: { task: TaskResponse; projectName?: stri
         {/* Labels are supplementary; on a narrow screen the task's own name is
             worth more than the tags on it. */}
         <LabelChips labels={task.labels} className="hidden md:inline-flex" />
+
+        {/*
+          Only when there is something to say. A "0" against every task that no
+          agent has touched would put a column of nothing down the list and bury
+          the handful of rows where the number matters.
+        */}
+        {runs ? (
+          <RunSummary
+            count={runs.total}
+            latestStatus={runs.latest.status}
+            blocked={runs.blocked}
+            href={`/tasks/${task.id}#runs`}
+            title={describeRunStats(runs, EXECUTION_STATUS_LABEL)}
+          />
+        ) : null}
 
         {/* Fixed widths from here on, so the last two things on every row line
             up as columns instead of drifting with the labels beside them. */}

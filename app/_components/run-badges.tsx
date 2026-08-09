@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type {
   ChangeType,
   ExecutionStatus,
@@ -111,6 +113,49 @@ export function ExecutionStatusBadge({
       <ExecutionStatusIcon status={status} />
       {short ? EXECUTION_STATUS_SHORT[status] : EXECUTION_STATUS_LABEL[status]}
     </span>
+  );
+}
+
+/**
+ * How a task has been run, compressed to one glyph and a number.
+ *
+ * A task list is not a run list, so this says only what a glance needs: how many
+ * times an agent has attempted this, and where the newest attempt stands. The
+ * full story is one click away.
+ *
+ * When a run is blocked the glyph is the blocked one rather than the newest
+ * status — a task with something waiting on a human should read that way even
+ * if a later attempt is happily running.
+ */
+export function RunSummary({
+  count,
+  latestStatus,
+  blocked,
+  href,
+  title,
+}: {
+  count: number;
+  latestStatus: ExecutionStatus;
+  blocked: number;
+  href: string;
+  title: string;
+}) {
+  const status = blocked > 0 ? "waiting_approval" : latestStatus;
+
+  return (
+    <Link
+      href={href}
+      title={title}
+      className={cx(
+        "inline-flex shrink-0 items-center gap-[6px] rounded-control px-[6px] py-[2px]",
+        "text-mini leading-[16px] no-underline transition-colors duration-100",
+        "hover:bg-overlay-hover",
+        blocked > 0 ? "text-orange" : "text-fg-subtle hover:text-fg",
+      )}
+    >
+      <ExecutionStatusIcon status={status} />
+      <span className="tabular-nums">{count}</span>
+    </Link>
   );
 }
 

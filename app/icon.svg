@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Cerebral">
+  <!--
+    cerebral-favicon.svg, with one addition: a colour.
+
+    The brand file strokes in `currentColor`, which is the right call anywhere
+    it sits inside the app. A favicon sits in the browser's tab strip and
+    inherits nothing, so `currentColor` resolves to black and the mark vanishes
+    against a dark tab. These two rules give it the colour it would otherwise
+    have to borrow — the library's primary on a light tab strip, and the lighter
+    focus-ring shade on a dark one, where the darker indigo goes muddy.
+  -->
+  <style>
+    :root { color: #5e6ad2 }
+    @media (prefers-color-scheme: dark) { :root { color: #8b95ff } }
+  </style>
+  <path d="M20 5c-6 0-7 4-7 7 0 3-3.5 3.5-5.5 4 2 .5 5.5 1 5.5 4 0 3 1 7 7 7"/>
+  <path d="M20 12c4.5 2 4.5 6 0 8"/>
+</svg>

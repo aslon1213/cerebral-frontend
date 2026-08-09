@@ -93,6 +93,17 @@
   --text-title1: 36px;
   --text-title1--line-height: 1.2;
 
+  /* Two sizes above the library's scale, for the landing page's headline and
+     its section headings. The app has no use for either. Tracking tightens as
+     the size grows — Inter set at 60px on its default tracking reads loose,
+     and the library's own marketing type is drawn tight. */
+  --text-display: 34px;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.021em;
+  --text-hero: 60px;
+  --text-hero--line-height: 1.02;
+  --text-hero--letter-spacing: -0.032em;
+
   /* --- Radii ---------------------------------------------------------- */
   --radius-control: 4px; /* buttons, menu items */
   --radius-input: 6px; /* input fields */
@@ -211,5 +222,118 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+
+  /*
+    Smooth scrolling for the landing page's own anchors, and only there — a
+    navigation inside the app should still land instantly. Next 16 stopped
+    overriding `scroll-behavior` during route transitions, so scoping the rule
+    to the page that wants it is now the only thing keeping it off the app.
+  */
+  html:has(.landing) {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+  Landing page
+  ------------
+
+  Everything above is the product's design system, and the landing page is
+  built from it. What follows is the little a marketing page needs that the app
+  does not: a wash of brand light, a load-in stagger, and a scroll reveal.
+*/
+
+@layer components {
+  /*
+    The brand light behind the hero and the closing call to action. Painted as
+    a background gradient rather than a blurred element, so it composites for
+    free and cannot soften the text sitting over it.
+  */
+  .landing-glow {
+    background:
+      radial-gradient(
+        58% 46% at 50% 0%,
+        rgba(94, 106, 210, 0.22),
+        transparent 72%
+      ),
+      radial-gradient(
+        26% 24% at 50% 4%,
+        rgba(108, 121, 255, 0.14),
+        transparent 70%
+      );
+  }
+
+  /*
+    Fades a block out along its lower and trailing edges, and is the reason the
+    problem section's panel does not scroll.
+
+    Both edges are saying the same thing. Down the page: these rows repeat
+    without end, so the list has to stop without looking like it stopped.
+    Across it: the code is not what that panel is about — the eleven identical
+    labels are — so it dissolves rather than being clipped by the border and
+    inviting someone to go looking for the rest of it.
+  */
+  .landing-fade-out {
+    mask-image:
+      linear-gradient(to bottom, #000 44%, transparent 100%),
+      linear-gradient(to right, #000 58%, transparent 100%);
+    mask-composite: intersect;
+  }
+
+  /* The load-in stagger. Each element carries its own `animation-delay`. */
+  .landing-enter {
+    animation: landing-rise 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* The blame record, replayed each time a different line is selected. */
+  .landing-swap {
+    animation: landing-fade 240ms ease-out both;
+  }
+
+  /*
+    Scroll reveal, driven by the view timeline instead of an intersection
+    observer. No JavaScript, and because the animation only exists inside
+    `@supports`, a browser that cannot run it is left with the content plainly
+    visible rather than with an empty page.
+  */
+  @supports (animation-timeline: view()) {
+    .landing-reveal {
+      animation: landing-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 62%;
+    }
+
+    /*
+      A progress-driven animation ignores `animation-duration`, so the blanket
+      reduced-motion rule above cannot switch this one off. Handing it back the
+      document timeline can: with `both` and a 0.01ms duration it settles on
+      its end state immediately.
+    */
+    @media (prefers-reduced-motion: reduce) {
+      .landing-reveal {
+        animation-timeline: auto;
+      }
+    }
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

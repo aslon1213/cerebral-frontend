@@ -11,6 +11,7 @@ import {
   SearchIcon,
   SignOutIcon,
 } from "./icons";
+import { CerebralLockup, CerebralMark } from "./logo";
 import { NavLink } from "./nav-link";
 import { SubmitButton } from "./form-ui";
 import { buttonClasses } from "./ui";
@@ -40,20 +41,17 @@ export async function Nav() {
     */
     <aside className="flex w-[56px] shrink-0 flex-col gap-[16px] border-r border-line bg-sidebar px-[8px] py-[14px] md:w-[220px] md:px-[12px]">
       {/*
-        The workspace mark is the workspace's own letter, not the signed-in
-        user's. It used to take the user's initial, so the square and the avatar
-        beside it showed the same letter and neither identified anything.
+        The workspace row wears the brand logo. On the collapsed rail there is
+        only room for the glyph, so the lockup gives way to the mark rather than
+        being squeezed — the same swap the rail makes with every other label.
       */}
       <Link
         href="/projects"
-        className="flex min-w-0 items-center justify-center gap-[8px] rounded-control px-[4px] py-[3px] no-underline transition-colors duration-100 hover:bg-overlay-hover md:justify-start"
+        aria-label="Cerebral"
+        className="flex min-w-0 items-center justify-center rounded-control px-[4px] py-[3px] text-fg no-underline transition-colors duration-100 hover:bg-overlay-hover md:justify-start"
       >
-        <span className="flex size-[18px] shrink-0 items-center justify-center rounded-[4px] bg-brand text-micro font-medium text-white">
-          C
-        </span>
-        <span className="hidden truncate text-small font-medium text-fg md:inline">
-          Cerebral
-        </span>
+        <CerebralMark size={22} className="shrink-0 md:hidden" />
+        <CerebralLockup height={22} className="hidden shrink-0 md:block" />
       </Link>
 
       {/* Create + search, the pair the library places under the workspace row.

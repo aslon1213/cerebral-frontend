@@ -9,9 +9,10 @@ export default async function RegisterPage({
   searchParams: Promise<{ redirectTo?: string }>;
 }) {
   const { redirectTo } = await searchParams;
-  const safeRedirect = redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
-    ? redirectTo
-    : "/";
+  const safeRedirect =
+    redirectTo?.startsWith("/") && !redirectTo.startsWith("//") && redirectTo !== "/"
+      ? redirectTo
+      : "/projects";
 
   return <AuthForm mode="register" action={registerAction} redirectTo={safeRedirect} />;
 }

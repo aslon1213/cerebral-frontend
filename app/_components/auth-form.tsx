@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import type { AuthFormState } from "@/app/actions/auth";
 
 import { FormError, SubmitButton } from "./form-ui";
+import { CerebralMark } from "./logo";
 import { Card, Field, Input } from "./ui";
 
 interface AuthFormProps {
@@ -48,9 +49,9 @@ export function AuthForm({ mode, action, redirectTo }: AuthFormProps) {
     <div className="flex min-h-screen items-center justify-center bg-app px-[20px] py-[48px]">
       <div className="flex w-full max-w-[400px] flex-col gap-[20px]">
         <div className="flex flex-col items-center gap-[10px] text-center">
-          <span className="flex size-[36px] items-center justify-center rounded-[8px] bg-brand text-large font-medium text-white shadow-button">
-            C
-          </span>
+          {/* The heading below already says "Cerebral", so the mark is
+              decoration here and stays out of the accessibility tree. */}
+          <CerebralMark size={36} className="text-fg" />
           <h1 className="text-title3 font-medium text-fg">{copy.title}</h1>
           <p className="max-w-[320px] text-small text-fg-subtle">{copy.subtitle}</p>
         </div>

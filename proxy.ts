@@ -21,13 +21,27 @@ import {
  * still handle 401 themselves.
  */
 
-/** Routes reachable without a session. */
-const PUBLIC_PATHS = ["/login", "/register"];
+/**
+ * The landing page. Public, and — unlike the auth routes — it stays reachable
+ * once you are signed in: it is a page people share, and bouncing someone off
+ * a link they were sent is worse than showing them a page they have outgrown.
+ */
+const LANDING_PATH = "/";
 
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some(
+/** Reachable without a session, and pointless with one. */
+const GUEST_PATHS = ["/login", "/register"];
+
+/** Where a signed-in user is sent when they land somewhere that is not for them. */
+const APP_HOME = "/projects";
+
+function isGuestPath(pathname: string): boolean {
+  return GUEST_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+}
+
+function isPublicPath(pathname: string): boolean {
+  return pathname === LANDING_PATH || isGuestPath(pathname);
 }
 
 export async function proxy(request: NextRequest) {
@@ -61,8 +75,8 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (signedIn && isPublicPath(pathname)) {
-    response = NextResponse.redirect(new URL("/", request.url));
+  if (signedIn && isGuestPath(pathname)) {
+    response = NextResponse.redirect(new URL(APP_HOME, request.url));
   } else {
     response = NextResponse.next();
   }

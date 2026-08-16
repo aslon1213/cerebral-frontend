@@ -22,11 +22,12 @@ import {
  */
 
 /**
- * The landing page. Public, and — unlike the auth routes — it stays reachable
- * once you are signed in: it is a page people share, and bouncing someone off
- * a link they were sent is worse than showing them a page they have outgrown.
+ * The landing page and the demo recording. Public, and — unlike the auth routes
+ * — they stay reachable once you are signed in: these are pages people share,
+ * and bouncing someone off a link they were sent is worse than showing them a
+ * page they have outgrown.
  */
-const LANDING_PATH = "/";
+const MARKETING_PATHS = ["/", "/demo"];
 
 /** Reachable without a session, and pointless with one. */
 const GUEST_PATHS = ["/login", "/register"];
@@ -46,7 +47,7 @@ function isGuestPath(pathname: string): boolean {
 }
 
 function isPublicPath(pathname: string): boolean {
-  return pathname === LANDING_PATH || isGuestPath(pathname);
+  return MARKETING_PATHS.includes(pathname) || isGuestPath(pathname);
 }
 
 export async function proxy(request: NextRequest) {

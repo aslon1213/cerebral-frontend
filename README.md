@@ -82,7 +82,6 @@ and nothing else.
 | Variable | |
 | --- | --- |
 | `API_BASE_URL` | Origin of the Cerebral backend. Defaults to `http://localhost:8000` |
-| `DEMO_VIDEO_URL` | Source for the `/demo` recording. Read per request, so replacing it takes a restart, not a rebuild |
 
 `.gitignore` ignores all `.env*`, so committing `.env.example` needs
 `git add -f`.
@@ -98,7 +97,7 @@ agents did, and the things their runs are made of:
 | `/runs`, `/runs/[id]` | Executions — status, usage, the event transcript, the code changes, live tailing |
 | `/projects`, `/tasks`, `/labels` | Plan: human and agent work in one place |
 | `/repos`, `/agents`, `/api-keys` | Setup: what agents run against, and the credentials they run with |
-| `/`, `/demo` | Public marketing pages, reachable signed in or out |
+| `/`, | Public marketing pages, reachable signed in or out |
 
 Writes on the ingest path — opening a run, appending transcript events, raising
 an intervention — are deliberately **not** in this client. They are API-key-only
@@ -128,7 +127,6 @@ Worth knowing before you edit:
 ```
 app/
   page.tsx           the landing page
-  demo/              the demo recording
   login/ register/   auth
   (app)/             the signed-in app — one directory per route above
   actions/           Server Actions, one module per resource
